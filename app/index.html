@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comfy Simple Studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Comfy Simple Studio <span class="sub">txt2img</span></h1>
+  <div class="conn">
+    <span id="connDot" class="dot off"></span>
+    <span id="connLabel">未接続</span>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="panel form-panel">
+    <h2>接続設定</h2>
+    <label>ComfyUI バックエンドURL
+      <div class="row">
+        <input id="backendUrl" type="text" placeholder="https://xxxx.trycloudflare.com">
+        <button id="connectBtn" class="btn secondary">接続確認</button>
+      </div>
+    </label>
+
+    <h2>プロンプト</h2>
+    <label>Prompt
+      <textarea id="prompt" rows="4" placeholder="1girl, teal twintails, smile, looking at viewer, ..."></textarea>
+    </label>
+    <label>Negative Prompt
+      <textarea id="negPrompt" rows="3" placeholder="lowres, bad anatomy, bad hands, ...">lowres, bad anatomy, bad hands, worst quality, low quality</textarea>
+    </label>
+
+    <h2>モデル</h2>
+    <label>Checkpoint
+      <select id="checkpoint"><option value="">(接続確認で取得)</option></select>
+    </label>
+
+    <h2>パラメータ</h2>
+    <div class="grid2">
+      <label>Width <input id="width" type="number" value="512" step="64"></label>
+      <label>Height <input id="height" type="number" value="512" step="64"></label>
+      <label>Steps <input id="steps" type="number" value="20" min="1" max="150"></label>
+      <label>CFG Scale <input id="cfg" type="number" value="7" step="0.5"></label>
+      <label>Batch size <input id="batchSize" type="number" value="1" min="1" max="8"></label>
+      <label>Seed <input id="seed" type="number" value="0"></label>
+    </div>
+    <label class="checkline"><input id="randomSeed" type="checkbox" checked> 毎回ランダムシード</label>
+
+    <div class="grid2">
+      <label>Sampler
+        <select id="sampler">
+          <option value="euler">euler</option>
+          <option value="euler_ancestral">euler_ancestral</option>
+          <option value="dpmpp_2m">dpmpp_2m</option>
+          <option value="dpmpp_2m_sde">dpmpp_2m_sde</option>
+          <option value="dpmpp_sde">dpmpp_sde</option>
+          <option value="ddim">ddim</option>
+          <option value="lcm">lcm</option>
+        </select>
+      </label>
+      <label>Scheduler
+        <select id="scheduler">
+          <option value="normal">normal</option>
+          <option value="karras">karras</option>
+          <option value="exponential">exponential</option>
+          <option value="simple">simple</option>
+          <option value="sgm_uniform">sgm_uniform</option>
+        </select>
+      </label>
+    </div>
+
+    <button id="generateBtn" class="btn primary wide">生成</button>
+  </section>
+
+  <section class="panel output-panel">
+    <h2>Output</h2>
+    <div id="progressWrap" class="progress-wrap hidden">
+      <div id="progressBar" class="progress-bar"></div>
+      <span id="progressLabel">0%</span>
+    </div>
+    <div id="statusMsg" class="status-msg"></div>
+    <div class="output-frame">
+      <img id="outputImage" alt="生成結果がここに表示されます">
+    </div>
+    <h3>履歴</h3>
+    <div id="history" class="history"></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

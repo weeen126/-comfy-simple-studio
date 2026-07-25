@@ -1,0 +1,219 @@
+:root {
+  color-scheme: dark;
+  --bg: #16181d;
+  --panel: #1e2128;
+  --panel-2: #262a33;
+  --border: #333844;
+  --text: #e8e9ec;
+  --text-dim: #9aa0ab;
+  --accent: #4f8cff;
+  --accent-2: #3fd39a;
+  --danger: #ff5d6c;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Hiragino Sans, Meiryo, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+.topbar h1 {
+  font-size: 1.05rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.topbar .sub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+.dot.off { background: var(--danger); }
+.dot.ok { background: var(--accent-2); }
+.dot.pending { background: #e6b800; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin: 18px 0 8px;
+}
+.panel h2:first-child { margin-top: 0; }
+
+.panel h3 {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 14px 0 8px;
+}
+
+label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+input, select, textarea {
+  width: 100%;
+  margin-top: 4px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+textarea { resize: vertical; }
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+.row input { flex: 1; }
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 10px;
+}
+
+.checkline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.checkline input { width: auto; margin: 0; }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:disabled { background: #3a4152; color: var(--text-dim); cursor: not-allowed; }
+.btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); white-space: nowrap; }
+.btn.wide { width: 100%; margin-top: 8px; padding: 12px; font-size: 1rem; }
+
+.progress-wrap {
+  position: relative;
+  height: 22px;
+  background: var(--panel-2);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.progress-wrap.hidden { display: none; }
+.progress-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.15s ease;
+}
+#progressLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.status-msg {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  min-height: 1.2em;
+  margin-bottom: 8px;
+}
+.status-msg.error { color: var(--danger); }
+
+.output-frame {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.output-frame img {
+  max-width: 100%;
+  max-height: 70vh;
+  display: none;
+}
+.output-frame img[src] { display: block; }
+
+.history {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.history img {
+  height: 84px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+}
