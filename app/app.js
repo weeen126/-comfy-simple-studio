@@ -23,7 +23,9 @@
     animaNegPrompt: document.getElementById('animaNegPrompt'),
     animaStage2Extra: document.getElementById('animaStage2Extra'),
     animaCharIndex: document.getElementById('animaCharIndex'),
+    batchCount: document.getElementById('batchCount'),
     generateBtn: document.getElementById('generateBtn'),
+    stopBtn: document.getElementById('stopBtn'),
     progressWrap: document.getElementById('progressWrap'),
     progressBar: document.getElementById('progressBar'),
     progressLabel: document.getElementById('progressLabel'),
@@ -38,6 +40,9 @@
   let ws = null;
   let currentPromptId = null;
   let stuckTimer = null;
+  let batchTotal = 0;
+  let batchDone = 0;
+  let batchCancelled = false;
 
   function uuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -81,6 +86,7 @@
       animaNegPrompt: els.animaNegPrompt.value,
       animaStage2Extra: els.animaStage2Extra.value,
       animaCharIndex: els.animaCharIndex.value,
+      batchCount: els.batchCount.value,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }
@@ -107,6 +113,7 @@
       if (data.animaNegPrompt) els.animaNegPrompt.value = data.animaNegPrompt;
       if (typeof data.animaStage2Extra === 'string') els.animaStage2Extra.value = data.animaStage2Extra;
       if (data.animaCharIndex) els.animaCharIndex.value = data.animaCharIndex;
+      if (data.batchCount) els.batchCount.value = data.batchCount;
     } catch (e) {
       console.warn('settings load failed', e);
     }
@@ -191,7 +198,7 @@
         setStatus('バックエンドとのWebSocket接続が切れました。Colabのセッションが有効か確認し、もう一度生成してください', true);
         hideProgress();
         clearStuckTimer();
-        els.generateBtn.disabled = false;
+        finishBatch();
       }
     };
   }
@@ -235,7 +242,7 @@
       setStatus('生成エラー: ' + (data.exception_message || 'unknown error'), true);
       hideProgress();
       clearStuckTimer();
-      els.generateBtn.disabled = false;
+      finishBatch();
     }
   }
 
@@ -385,24 +392,15 @@
     };
   }
 
-  async function generate() {
-    const url = backendUrl();
-    if (!url) {
-      setStatus('先にバックエンドURLを設定してください', true);
-      return;
-    }
-
+  function buildCurrentWorkflow() {
     const isAnima = els.workflowProfile.value === 'anima_pose';
-    let workflow;
 
     if (isAnima) {
       if (!els.animaCommonPrompt.value.trim()) {
-        setStatus('Positive Prompt (Common) を入力してください', true);
-        return;
+        throw new Error('Positive Prompt (Common) を入力してください');
       }
-      saveSettings();
       const charIndex = Number(els.animaCharIndex.value) || 0;
-      workflow = buildAnimaPoseWorkflow({
+      const workflow = buildAnimaPoseWorkflow({
         commonPrompt: els.animaCommonPrompt.value,
         negPrompt: els.animaNegPrompt.value,
         stage2Extra: els.animaStage2Extra.value,
@@ -412,45 +410,83 @@
       });
       els.animaCharIndex.value = charIndex + 1;
       saveSettings();
-    } else {
-      if (!els.checkpoint.value) {
-        setStatus('チェックポイントが選択されていません。接続確認を行ってください', true);
+      return workflow;
+    }
+
+    if (!els.checkpoint.value) {
+      throw new Error('チェックポイントが選択されていません。接続確認を行ってください');
+    }
+    if (!els.prompt.value.trim()) {
+      throw new Error('プロンプトを入力してください');
+    }
+
+    const seed = els.randomSeed.checked
+      ? Math.floor(Math.random() * 1_000_000_000_000)
+      : Number(els.seed.value) || 0;
+
+    return buildWorkflow({
+      prompt: els.prompt.value,
+      negPrompt: els.negPrompt.value,
+      checkpoint: els.checkpoint.value,
+      width: Number(els.width.value),
+      height: Number(els.height.value),
+      steps: Number(els.steps.value),
+      cfg: Number(els.cfg.value),
+      batchSize: Number(els.batchSize.value),
+      sampler: els.sampler.value,
+      scheduler: els.scheduler.value,
+      seed,
+    });
+  }
+
+  function setBatchUiRunning(running) {
+    els.generateBtn.disabled = running;
+    els.batchCount.disabled = running;
+    els.stopBtn.classList.toggle('hidden', !running);
+    els.stopBtn.disabled = false;
+  }
+
+  async function startGeneration() {
+    const url = backendUrl();
+    if (!url) {
+      setStatus('先にバックエンドURLを設定してください', true);
+      return;
+    }
+
+    let workflow;
+    try {
+      workflow = buildCurrentWorkflow();
+    } catch (e) {
+      setStatus(e.message, true);
+      return;
+    }
+
+    saveSettings();
+    batchTotal = Math.max(1, Math.min(100, Number(els.batchCount.value) || 1));
+    batchDone = 0;
+    batchCancelled = false;
+    setBatchUiRunning(true);
+    await queueOneGeneration(workflow);
+  }
+
+  async function queueOneGeneration(precomputedWorkflow) {
+    const url = backendUrl();
+    let workflow = precomputedWorkflow;
+    if (!workflow) {
+      try {
+        workflow = buildCurrentWorkflow();
+      } catch (e) {
+        setStatus(e.message, true);
+        finishBatch();
         return;
       }
-      if (!els.prompt.value.trim()) {
-        setStatus('プロンプトを入力してください', true);
-        return;
-      }
-
-      saveSettings();
-
-      const seed = els.randomSeed.checked
-        ? Math.floor(Math.random() * 1_000_000_000_000)
-        : Number(els.seed.value) || 0;
-
-      const params = {
-        prompt: els.prompt.value,
-        negPrompt: els.negPrompt.value,
-        checkpoint: els.checkpoint.value,
-        width: Number(els.width.value),
-        height: Number(els.height.value),
-        steps: Number(els.steps.value),
-        cfg: Number(els.cfg.value),
-        batchSize: Number(els.batchSize.value),
-        sampler: els.sampler.value,
-        scheduler: els.scheduler.value,
-        seed,
-      };
-
-      workflow = buildWorkflow(params);
     }
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       connectWebSocket();
     }
 
-    els.generateBtn.disabled = true;
-    setStatus('キューに送信中...');
+    setStatus('キューに送信中... (' + (batchDone + 1) + '/' + batchTotal + ')');
     showProgress(0);
 
     try {
@@ -465,14 +501,24 @@
       }
       const data = await res.json();
       currentPromptId = data.prompt_id;
-      setStatus('生成中... (prompt_id: ' + currentPromptId + ')');
+      setStatus('生成中... (' + (batchDone + 1) + '/' + batchTotal + ')');
       armStuckTimer();
     } catch (e) {
       setStatus('生成リクエストに失敗しました: ' + e.message, true);
       hideProgress();
       clearStuckTimer();
-      els.generateBtn.disabled = false;
+      finishBatch();
     }
+  }
+
+  function finishBatch() {
+    setBatchUiRunning(false);
+  }
+
+  function requestStop() {
+    batchCancelled = true;
+    els.stopBtn.disabled = true;
+    setStatus('現在の生成が完了したら停止します...');
   }
 
   async function onGenerationDone(promptId) {
@@ -497,14 +543,21 @@
       if (images.length > 0) {
         els.outputImage.src = images[images.length - 1];
         for (const src of images) addToHistory(src);
-        setStatus('完了');
       } else {
         setStatus('画像が見つかりませんでした', true);
       }
     } catch (e) {
       setStatus('結果の取得に失敗しました: ' + e.message, true);
-    } finally {
-      els.generateBtn.disabled = false;
+      finishBatch();
+      return;
+    }
+
+    batchDone += 1;
+    if (batchCancelled || batchDone >= batchTotal) {
+      setStatus('完了 (' + batchDone + '/' + batchTotal + ')');
+      finishBatch();
+    } else {
+      queueOneGeneration();
     }
   }
 
@@ -526,7 +579,8 @@
   }
 
   els.connectBtn.addEventListener('click', checkConnection);
-  els.generateBtn.addEventListener('click', generate);
+  els.generateBtn.addEventListener('click', startGeneration);
+  els.stopBtn.addEventListener('click', requestStop);
   els.workflowProfile.addEventListener('change', () => {
     updateProfileVisibility();
     saveSettings();

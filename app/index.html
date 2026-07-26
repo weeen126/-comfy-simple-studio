@@ -112,7 +112,13 @@ masterpiece, best quality, very aesthetic, absurdres,masterpiece, ultra-HD, high
       <p class="hint">ポーズ画像は毎回 <code>poses</code> フォルダからランダムに1枚選ばれます。モデル・LoRA・ステップ数などはこのプロファイル固定です。</p>
     </div>
 
+    <h2>連続生成</h2>
+    <label>生成回数
+      <input id="batchCount" type="number" value="1" min="1" max="100">
+    </label>
+
     <button id="generateBtn" class="btn primary wide">生成</button>
+    <button id="stopBtn" class="btn secondary wide hidden">停止（現在の生成完了後）</button>
   </section>
 
   <section class="panel output-panel">
