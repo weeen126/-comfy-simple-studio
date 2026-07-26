@@ -30,6 +30,7 @@
 
   let ws = null;
   let currentPromptId = null;
+  let stuckTimer = null;
 
   function uuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -157,8 +158,34 @@
     }
     const url = backendUrl().replace(/^http/i, 'ws') + '/ws?clientId=' + getClientId();
     ws = new WebSocket(url);
+    ws.onopen = () => setConn('ok', '接続OK');
     ws.onmessage = handleWsMessage;
     ws.onerror = () => setStatus('WebSocket接続エラー', true);
+    ws.onclose = () => {
+      setConn('off', '切断されました');
+      if (els.generateBtn.disabled) {
+        setStatus('バックエンドとのWebSocket接続が切れました。Colabのセッションが有効か確認し、もう一度生成してください', true);
+        hideProgress();
+        clearStuckTimer();
+        els.generateBtn.disabled = false;
+      }
+    };
+  }
+
+  function clearStuckTimer() {
+    if (stuckTimer) {
+      clearTimeout(stuckTimer);
+      stuckTimer = null;
+    }
+  }
+
+  function armStuckTimer() {
+    clearStuckTimer();
+    stuckTimer = setTimeout(() => {
+      if (els.generateBtn.disabled) {
+        setStatus('生成に時間がかかっています(3分以上)。Colab側がフリーズ/切断していないか確認してください。切断していた場合は再接続して生成し直してください');
+      }
+    }, 180000);
   }
 
   function handleWsMessage(event) {
@@ -183,6 +210,7 @@
     } else if (type === 'execution_error' && data.prompt_id === currentPromptId) {
       setStatus('生成エラー: ' + (data.exception_message || 'unknown error'), true);
       hideProgress();
+      clearStuckTimer();
       els.generateBtn.disabled = false;
     }
   }
@@ -279,6 +307,10 @@
 
     const workflow = buildWorkflow(params);
 
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      connectWebSocket();
+    }
+
     els.generateBtn.disabled = true;
     setStatus('キューに送信中...');
     showProgress(0);
@@ -296,14 +328,17 @@
       const data = await res.json();
       currentPromptId = data.prompt_id;
       setStatus('生成中... (prompt_id: ' + currentPromptId + ')');
+      armStuckTimer();
     } catch (e) {
       setStatus('生成リクエストに失敗しました: ' + e.message, true);
       hideProgress();
+      clearStuckTimer();
       els.generateBtn.disabled = false;
     }
   }
 
   async function onGenerationDone(promptId) {
+    clearStuckTimer();
     hideProgress();
     setStatus('画像を取得中...');
     const url = backendUrl();
