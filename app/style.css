@@ -14,6 +14,19 @@
 
 * { box-sizing: border-box; }
 
+.hidden { display: none !important; }
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.hint code {
+  background: var(--panel-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Hiragino Sans, Meiryo, sans-serif;

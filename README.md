@@ -48,16 +48,31 @@ ipconfig
 
 1. 「接続設定」にColabで発行された公開URLを貼り付けて「接続確認」を押す
    - 接続に成功するとチェックポイント一覧が自動取得されます
-2. プロンプト / ネガティブプロンプトを入力
-3. モデル・サイズ・ステップ数などを必要に応じて調整
-4. 「生成」を押すと進捗バーが表示され、完了すると画像が表示されます
+2. 「ワークフロー」でプロファイルを選択
+   - **シンプル txt2img**: チェックポイント・サイズ・ステップ数などを自由に指定する最小構成
+   - **ポーズバリエーション (Anima)**: `pose_variation_anima_V4.json` を再現した固定パイプライン（下記参照）
+3. プロンプトなど該当する項目を入力し、「生成」を押す
+4. 進捗バーが表示され、完了すると画像が表示されます
 5. 過去の生成画像は下部の履歴に並びます（クリックで再表示）
 
 ## 仕組み
 
 - フロントエンドはComfyUIの標準API (`/prompt`, `/history/{id}`, `/view`, `/ws`) を直接叩いています
-- 生成リクエストは、CheckpointLoaderSimple → CLIPTextEncode(positive/negative) → EmptyLatentImage → KSampler → VAEDecode → SaveImage という最小構成のワークフローJSONを組み立てて送信しています
 - WebSocketで進捗(`progress`)と完了(`executing` node=null)を監視し、完了後に`/history`から出力画像のファイル情報を取得して`/view`で表示しています
+
+### シンプル txt2img プロファイル
+
+CheckpointLoaderSimple → CLIPTextEncode(positive/negative) → EmptyLatentImage → KSampler → VAEDecode → SaveImage という最小構成のワークフローJSONを組み立てて送信します。
+
+### ポーズバリエーション (Anima) プロファイル
+
+`C:\AI\ComfyUI_windows_portable_v2\ComfyUI\user\default\workflows\pose_variation_anima_V4.json`（サブグラフ使用）を、`/prompt`に直接投げられるフラットなAPI形式（32ノード）に手動で書き下ろしたものです（`app/app.js` の `buildAnimaPoseWorkflow`）。
+
+- Stage1: UNETLoader(`miaomiaoHarem_anima15`) + CLIPLoader(`qwen_3_06b_base`) + VAELoader(`qwen_image_vae`) + LoraLoader(`weeen.safetensors`) + `poses`フォルダからランダムに選んだ1枚を AnimaLLLiteApply でポーズ条件付け → KSampler(er_sde/simple, cfg4, steps30)
+- Stage2: CheckpointLoaderSimple(`oneObsession_v22`) + LoraLoader(`weeen_sdxl_lora`) で img2img 的に再生成 → KSampler(euler/normal, cfg7, steps30, denoise0.5)
+- 仕上げ: ESRGANアップスケール(`4x_IllustrationJaNai_V1_ESRGAN_135k`) → 4メガピクセルにリサイズ → 保存
+- キャラクター名は `characters_anima` フォルダの`.txt`を index 順に読み込み（生成ごとに index を自動+1、手動変更も可）
+- ポーズ画像・モデル名・LoRA強度・サンプラー・ステップ数などはこのプロファイル専用に固定されています。変更したい場合は `ANIMA_POSE_CONFIG`（`app/app.js`）を編集してください
 
 ## トラブルシューティング
 
@@ -70,7 +85,5 @@ ipconfig
 ## 今後の拡張候補
 
 - img2img タブ
-- ワークフロー プロファイル選択（LoRA・別モデル構成の切り替え）
-- 複数チェックポイント/VAE/テキストエンコーダーの個別選択（SDXL・Qwen-Image等の構成向け）
-
-現状の最小構成（CheckpointLoaderSimple）は、単一の checkpoint ファイル（例: `oneObsession_v22.safetensors`）を使うモデルにのみ対応しています。`diffusion_models/` に置かれたUNet単体のモデル（例: `miaomiaoHarem_anima15.safetensors`）や、VAE・テキストエンコーダーを個別に組み合わせるAnima/Qwen-Image系のワークフローを使うには、上記の「ワークフロー プロファイル選択」の実装が必要です。
+- ポーズ/キャラクターフォルダをアプリ側から選べるようにする
+- ポーズバリエーションのステップ数・cfg・LoRA強度などをアプリからも調整可能にする

@@ -26,51 +26,90 @@
       </div>
     </label>
 
-    <h2>プロンプト</h2>
-    <label>Prompt
-      <textarea id="prompt" rows="4" placeholder="1girl, teal twintails, smile, looking at viewer, ..."></textarea>
-    </label>
-    <label>Negative Prompt
-      <textarea id="negPrompt" rows="3" placeholder="lowres, bad anatomy, bad hands, ...">lowres, bad anatomy, bad hands, worst quality, low quality</textarea>
-    </label>
-
-    <h2>モデル</h2>
-    <label>Checkpoint
-      <select id="checkpoint"><option value="">(接続確認で取得)</option></select>
+    <h2>ワークフロー</h2>
+    <label>プロファイル
+      <select id="workflowProfile">
+        <option value="simple">シンプル txt2img</option>
+        <option value="anima_pose">ポーズバリエーション (Anima)</option>
+      </select>
     </label>
 
-    <h2>パラメータ</h2>
-    <div class="grid2">
-      <label>Width <input id="width" type="number" value="512" step="64"></label>
-      <label>Height <input id="height" type="number" value="512" step="64"></label>
-      <label>Steps <input id="steps" type="number" value="20" min="1" max="150"></label>
-      <label>CFG Scale <input id="cfg" type="number" value="7" step="0.5"></label>
-      <label>Batch size <input id="batchSize" type="number" value="1" min="1" max="8"></label>
-      <label>Seed <input id="seed" type="number" value="0"></label>
+    <div id="simpleFields">
+      <h2>プロンプト</h2>
+      <label>Prompt
+        <textarea id="prompt" rows="4" placeholder="1girl, teal twintails, smile, looking at viewer, ..."></textarea>
+      </label>
+      <label>Negative Prompt
+        <textarea id="negPrompt" rows="3" placeholder="lowres, bad anatomy, bad hands, ...">lowres, bad anatomy, bad hands, worst quality, low quality</textarea>
+      </label>
+
+      <h2>モデル</h2>
+      <label>Checkpoint
+        <select id="checkpoint"><option value="">(接続確認で取得)</option></select>
+      </label>
+
+      <h2>パラメータ</h2>
+      <div class="grid2">
+        <label>Width <input id="width" type="number" value="512" step="64"></label>
+        <label>Height <input id="height" type="number" value="512" step="64"></label>
+        <label>Steps <input id="steps" type="number" value="20" min="1" max="150"></label>
+        <label>CFG Scale <input id="cfg" type="number" value="7" step="0.5"></label>
+        <label>Batch size <input id="batchSize" type="number" value="1" min="1" max="8"></label>
+        <label>Seed <input id="seed" type="number" value="0"></label>
+      </div>
+      <label class="checkline"><input id="randomSeed" type="checkbox" checked> 毎回ランダムシード</label>
+
+      <div class="grid2">
+        <label>Sampler
+          <select id="sampler">
+            <option value="euler">euler</option>
+            <option value="euler_ancestral">euler_ancestral</option>
+            <option value="dpmpp_2m">dpmpp_2m</option>
+            <option value="dpmpp_2m_sde">dpmpp_2m_sde</option>
+            <option value="dpmpp_sde">dpmpp_sde</option>
+            <option value="ddim">ddim</option>
+            <option value="lcm">lcm</option>
+          </select>
+        </label>
+        <label>Scheduler
+          <select id="scheduler">
+            <option value="normal">normal</option>
+            <option value="karras">karras</option>
+            <option value="exponential">exponential</option>
+            <option value="simple">simple</option>
+            <option value="sgm_uniform">sgm_uniform</option>
+          </select>
+        </label>
+      </div>
     </div>
-    <label class="checkline"><input id="randomSeed" type="checkbox" checked> 毎回ランダムシード</label>
 
-    <div class="grid2">
-      <label>Sampler
-        <select id="sampler">
-          <option value="euler">euler</option>
-          <option value="euler_ancestral">euler_ancestral</option>
-          <option value="dpmpp_2m">dpmpp_2m</option>
-          <option value="dpmpp_2m_sde">dpmpp_2m_sde</option>
-          <option value="dpmpp_sde">dpmpp_sde</option>
-          <option value="ddim">ddim</option>
-          <option value="lcm">lcm</option>
-        </select>
+    <div id="animaPoseFields" class="hidden">
+      <h2>プロンプト</h2>
+      <label>Positive Prompt (Common)
+        <textarea id="animaCommonPrompt" rows="8">//Fashions
+maid outfit, white lace headdress, black short-sleeve dress, white apron, black ribbon bow, frilled sleeves, white collar,
+//Facial expression
+//Pose
+smile, direct eye contact with viewer,
+//Angle.
+cowboy shot,dynamic angle,
+//Background
+simple background,simple light pink background,white frame,
+//Style
+masterpiece, best quality, very aesthetic, absurdres,masterpiece, ultra-HD, high detail, depth of field,(dramatic lighting),masterpiece, best quality, very aesthetic, , 8k,,masterpiece, ultra-HD,high detail,soft reflections, amazing composition,(score_9, score_8_up, score_7_up),</textarea>
       </label>
-      <label>Scheduler
-        <select id="scheduler">
-          <option value="normal">normal</option>
-          <option value="karras">karras</option>
-          <option value="exponential">exponential</option>
-          <option value="simple">simple</option>
-          <option value="sgm_uniform">sgm_uniform</option>
-        </select>
+      <label>Negative Prompt (Shared)
+        <textarea id="animaNegPrompt" rows="3">(bad quality,worst quality,low quality,bad anatomy,bad hand:1.1), unaestheticXL_hk1, nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,</textarea>
       </label>
+      <label>Stage2 追加 (表情・ポーズなど、任意)
+        <textarea id="animaStage2Extra" rows="2" placeholder="(任意) 表情やポーズの追加タグ"></textarea>
+      </label>
+
+      <h2>キャラクター</h2>
+      <label>キャラクター index (毎回自動で+1されます。手動変更も可)
+        <input id="animaCharIndex" type="number" value="0" min="0">
+      </label>
+      <p class="hint">ポーズ画像は毎回 <code>poses</code> フォルダからランダムに1枚選ばれます。モデル・LoRA・ステップ数などはこのプロファイル固定です。</p>
     </div>
 
     <button id="generateBtn" class="btn primary wide">生成</button>
